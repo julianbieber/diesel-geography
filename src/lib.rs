@@ -2,10 +2,8 @@
 
 #![allow(proc_macro_derive_resolution_fallback)]
 
-#[macro_use] extern crate diesel;
-extern crate postgis;
-#[cfg(feature = "serde")]
-#[macro_use] extern crate serde;
+#[macro_use]
+extern crate diesel;
 
 pub mod sql_types;
 pub mod types;

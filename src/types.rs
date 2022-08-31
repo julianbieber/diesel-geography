@@ -2,16 +2,18 @@
 
 use crate::sql_types::*;
 use diesel::deserialize::{self, FromSql};
-use diesel::pg::Pg;
+use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use postgis::ewkb::LineString;
 use postgis::ewkb::Point;
 use std::convert::From;
-use std::io::prelude::*;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, FromSqlRow, AsExpression)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[sql_type = "Geography"]
+#[diesel(sql_type = Geography)]
 pub struct GeogPoint {
     pub x: f64, // lon
     pub y: f64, // lat
@@ -32,17 +34,17 @@ impl From<GeogPoint> for Point {
 }
 
 impl FromSql<Geography, Pg> for GeogPoint {
-    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+    fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
         use postgis::ewkb::EwkbRead;
         use std::io::Cursor;
-        let bytes = not_none!(bytes);
+        let bytes = value.as_bytes();
         let mut rdr = Cursor::new(bytes);
         Ok(Point::read_ewkb(&mut rdr)?.into())
     }
 }
 
 impl ToSql<Geography, Pg> for GeogPoint {
-    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         use postgis::ewkb::{AsEwkbPoint, EwkbWrite};
         Point::from(*self).as_ewkb().write_ewkb(out)?;
         Ok(IsNull::No)
@@ -50,7 +52,7 @@ impl ToSql<Geography, Pg> for GeogPoint {
 }
 #[derive(Debug, Clone, PartialEq, FromSqlRow, AsExpression)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[sql_type = "Geography"]
+#[diesel(sql_type = Geography)]
 pub struct GeogLineString {
     pub points: Vec<GeogPoint>,
     pub srid: Option<i32>,
@@ -78,17 +80,17 @@ impl From<GeogLineString> for LineString {
 }
 
 impl FromSql<Geography, Pg> for GeogLineString {
-    fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+    fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
         use postgis::ewkb::EwkbRead;
         use std::io::Cursor;
-        let bytes = not_none!(bytes);
+        let bytes = value.as_bytes();
         let mut rdr = Cursor::new(bytes);
         Ok(LineString::read_ewkb(&mut rdr)?.into())
     }
 }
 
 impl ToSql<Geography, Pg> for GeogLineString {
-    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         use postgis::ewkb::{AsEwkbLineString, EwkbWrite};
         LineString::from(self.clone()).as_ewkb().write_ewkb(out)?;
         Ok(IsNull::No)
