@@ -12,6 +12,6 @@ categories = ["database"]
 edition = "2021"
 
 [dependencies]
-diesel = { version = "2.0", features = ["postgres"] }
+diesel = { version = "2.1", features = ["postgres"] }
 postgis = "0.8"
 serde = { version = "1.0", features = ["derive"], optional = true }
